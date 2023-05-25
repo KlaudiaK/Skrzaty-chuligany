@@ -33,8 +33,8 @@ void sendPacket(packet_t *pkt, int destination, int tag);
 typedef enum {
     FREE,
     WAITING_FOR_EYE_AND_GUNPOINT,
-    WAITING_FOR_GUN,
     PRODUCING_GUN,
+    WAITING_FOR_GUN,
     KILLING_RAT,
     InFinish
 } state_t;
