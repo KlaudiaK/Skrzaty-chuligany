@@ -9,7 +9,7 @@ void mainLoop()
 
     while (stan != InFinish) {
 	switch (stan) {
-	    case InRun: 
+	    case FREE:
 		perc = random()%100;
 		if ( perc < 25 ) {
 		    debug("Perc: %d", perc);
@@ -17,23 +17,24 @@ void mainLoop()
 		    debug("Zmieniam stan na wysyłanie");
 		    packet_t *pkt = malloc(sizeof(packet_t));
 		    pkt->data = perc;
-		    ackCount = 0;
+		    ackCountGp = 0;
+		    ackCountEye = 0;
 		    for (int i=0;i<=size-1;i++)
 			if (i!=rank)
-			    sendPacket( pkt, i, REQUEST);
-		    changeState( InWant );
+			    sendPacket( pkt, i, REQ_EYE);
+		    changeState( WAITING_FOR_EYE_AND_GUNPOINT );
 		    free(pkt);
 		}
 		debug("Skończyłem myśleć");
 		break;
-	    case InWant:
+	    case WAITING_FOR_EYE_AND_GUNPOINT:
 		println("Czekam na wejście do sekcji krytycznej")
 		// tutaj zapewne jakiś muteks albo zmienna warunkowa
 		// bo aktywne czekanie jest BUE
-		if ( ackCount == size - 1) 
-		    changeState(InSection);
+		if ( ackCountEye == size - 1)
+		    changeState(PRODUCING_GUN);
 		break;
-	    case InSection:
+	    case PRODUCING_GUN:
 		// tutaj zapewne jakiś muteks albo zmienna warunkowa
 		println("Jestem w sekcji krytycznej")
 		    sleep(5);
@@ -45,8 +46,8 @@ void mainLoop()
 		    pkt->data = perc;
 		    for (int i=0;i<=size-1;i++)
 			if (i!=rank)
-			    sendPacket( pkt, (rank+1)%size, RELEASE);
-		    changeState( InRun );
+			    sendPacket( pkt, (rank+1)%size, GUN_PRODUCED);
+		    changeState( FREE );
 		    free(pkt);
 		//}
 		break;

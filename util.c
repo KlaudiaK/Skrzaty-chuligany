@@ -7,7 +7,7 @@ MPI_Datatype MPI_PAKIET_T;
  * w util.h extern state_t stan (czyli zapowiedź, że gdzieś tam jest definicja
  * tutaj w util.c state_t stan (czyli faktyczna definicja)
  */
-state_t stan=InRun;
+state_t stan=FREE;
 
 /* zamek wokół zmiennej współdzielonej między wątkami. 
  * Zwróćcie uwagę, że każdy proces ma osobą pamięć, ale w ramach jednego
@@ -19,8 +19,17 @@ pthread_mutex_t stateMut = PTHREAD_MUTEX_INITIALIZER;
 struct tagNames_t{
     const char *name;
     int tag;
-} tagNames[] = { { "pakiet aplikacyjny", APP_PKT }, { "finish", FINISH}, 
-                { "potwierdzenie", ACK}, {"prośbę o sekcję krytyczną", REQUEST}, {"zwolnienie sekcji krytycznej", RELEASE} };
+} tagNames[] = { { "pakiet aplikacyjny", APP_PKT },
+                 { "finish", FINISH},
+                {"prośbę o sekcję krytyczną dostepu do zasobu agrafka", REQ_EYE},
+                {"zwolnienie sekcji krytycznej, wyprodukowanie innego typu zasobu", RELEASE_GUN},
+                {"potwierdzenie dostepu do zasobu agrafki", ACK_EYE},
+                {"potwierdzenie dostepu do zasobu celownika", ACK_GP},
+                {"prośbę o sekcję krytyczną dostepu do zasobu agrafka", REQ_GP},
+                {"potwierdzenie dostepu do zasobu broni", ACK_GUN},
+                {"prośbę o sekcję krytyczną dostepu do zasobu agrafka", REQ_GUN},
+                {"zwolnienie sekcji krytycznej, oddanie zasobów do puli",GUN_PRODUCED}
+};
 
 const char *const tag2string( int tag )
 {

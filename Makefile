@@ -3,7 +3,7 @@ HEADERS=$(SOURCES:.c=.h)
 FLAGS=-DDEBUG -g
 # FLAGS=-g
 
-all: main tags
+all: main
 
 main: $(SOURCES) $(HEADERS) Makefile
 	mpicc $(SOURCES) $(FLAGS) -o main

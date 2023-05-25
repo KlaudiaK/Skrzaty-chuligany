@@ -20,18 +20,29 @@
 
 extern int rank;
 extern int size;
-extern int ackCount;
+extern int ackCountEye;
+extern int ackCountGun;
+extern int ackCountGp;
+extern char* type;
+extern int nEye;
+extern int nGunpoint;
+extern int nBrownie;
+extern int nGnome;
+extern int nGun;
+extern int* eyeRequestQueue;
+extern int* gPRequestQueue;
+extern int* gunRequestQueue;
 extern pthread_t threadKom;
 extern int l_clock; // zegar
 extern sem_t l_clock_sem; // semafor, broni dostępu do zmiennej zegara
 
 #ifdef DEBUG
-#define debug(FORMAT,...) printf("%c[%d;%dm [t:%d] [%d]: " FORMAT "%c[%d;%dm\n",  27, (1+(rank/7))%2, 31+(6+rank)%7, l_clock, rank, ##__VA_ARGS__, 27,0,37);
+#define debug(FORMAT,...) printf("%c[%d;%dm [timestamp:%d] [type: %s] [%d]: " FORMAT "%c[%d;%dm\n",  27, (1+(rank/7))%2, 31+(6+rank)%7, l_clock, type, rank, ##__VA_ARGS__, 27,0,37);
 #else
 #define debug(...) ;
 #endif
 
-#define println(FORMAT,...) printf("%c[%d;%dm [t:%d] [%d]: " FORMAT "%c[%d;%dm\n",  27, (1+(rank/7))%2, 31+(6+rank)%7, l_clock, rank, ##__VA_ARGS__, 27,0,37);
+#define println(FORMAT,...) printf("%c[%d;%dm [timestamp:%d] [type: %s] [%d]: " FORMAT "%c[%d;%dm\n",  27, (1+(rank/7))%2, 31+(6+rank)%7, l_clock, type , rank, ##__VA_ARGS__, 27,0,37);
 
 
 #endif

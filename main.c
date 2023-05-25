@@ -12,10 +12,22 @@
  *
  */
 int rank, size;
-int ackCount = 0;
+int ackCountEye = 0;
+int ackCountGun = 0;
+int ackCountGp = 0;
 int l_clock = 0;
 sem_t l_clock_sem;
-/* 
+char* type;
+int nEye;
+int nGunpoint;
+int nBrownie;
+int nGnome;
+int nGun = 0;
+int* eyeRequestQueue;
+int* gPRequestQueue;
+int* gunRequestQueue;
+
+/*
  * Każdy proces ma dwa wątki - główny i komunikacyjny
  * w plikach, odpowiednio, watek_glowny.c oraz (siurpryza) watek_komunikacyjny.c
  *
@@ -62,6 +74,14 @@ void finalizuj()
 
 int main(int argc, char **argv)
 {
+    if (argc < 5) {
+        printf("Podaj argumenty: liczba skrzatow, liczba gnomow, liczba agrawek, liczba celownikow");
+        finalizuj();
+    }
+    nBrownie = atoi(argv[1]);
+    nGnome = atoi(argv[2]);
+    nEye = atoi(argv[1]);
+    nGunpoint = atoi(argv[1]);
     sem_init(&l_clock_sem, 0, 1);
     MPI_Status status;
     int provided;
@@ -70,7 +90,17 @@ int main(int argc, char **argv)
     srand(rank);
     inicjuj_typ_pakietu(); // tworzy typ pakietu
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (size != (atoi(argv[1]) + atoi(argv[2]))) {
+        printf("Liczba procesow musi byc rowna liczbie gnomow plus skrzatow\n");
+        printf("Podano %d procesów, %d skrzatow i %d gnomow\n", size, nBrownie, nGnome);
+        finalizuj();
+    }
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank >= size - nBrownie) {
+        type = "GNOME";
+    } else {
+        type = "BROWNIE";
+    }
     // startKomWatek w watek_komunikacyjny.c
     pthread_create( &threadKom, NULL, startKomWatek , 0);
 
