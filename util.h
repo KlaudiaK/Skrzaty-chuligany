@@ -9,6 +9,13 @@ typedef struct {
 
     int data;     /* przykładowe pole z danymi; można zmienić nazwę na bardziej pasującą */
 } packet_t;
+
+struct pair_id_ts {
+    int id;
+    int ts;
+    struct pair_id_ts* next;
+};
+
 #define NITEMS 3 // wielkość sekcji krytycznej
 /* Typy wiadomości */
 /* TYPY PAKIETÓW */
@@ -41,6 +48,9 @@ typedef enum {
 
 extern state_t stan;
 extern pthread_mutex_t stateMut;
+extern int ts_of_last_sent_eye_req;
+extern int ts_of_last_sent_gp_req;
+extern int ts_of_last_sent_gun_req;
 /* zmiana stanu, obwarowana muteksem */
 void changeState( state_t );
 #endif

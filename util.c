@@ -30,7 +30,9 @@ struct tagNames_t{
                 {"prośbę o sekcję krytyczną dostepu do zasobu agrafka", REQ_GUN},
                 {"zwolnienie sekcji krytycznej, oddanie zasobów do puli",GUN_PRODUCED}
 };
-
+int ts_of_last_sent_eye_req = 0;
+int ts_of_last_sent_gp_req = 0;
+int ts_of_last_sent_gun_req = 0;
 const char *const tag2string( int tag )
 {
     for (int i=0; i <sizeof(tagNames)/sizeof(struct tagNames_t);i++) {

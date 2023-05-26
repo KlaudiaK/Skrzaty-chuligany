@@ -24,17 +24,28 @@ extern int ackCountEye;
 extern int ackCountGun;
 extern int ackCountGp;
 extern char* type;
-extern int nEye;
-extern int nGunpoint;
 extern int nBrownie;
 extern int nGnome;
+extern int nEye;
+extern int nGunpoint;
 extern int nGun;
-extern int* eyeRequestQueue;
-extern int* gPRequestQueue;
-extern int* gunRequestQueue;
+extern int nEyeLocal;
+extern int nGunpointLocal;
+extern int nGunLocal;
+extern struct pair_id_ts *eyeRequestQueue;
+extern struct pair_id_ts *gPRequestQueue;
+extern struct pair_id_ts *gunRequestQueue;
 extern pthread_t threadKom;
 extern int l_clock; // zegar
 extern sem_t l_clock_sem; // semafor, broni dostępu do zmiennej zegara
+
+
+void sort(struct pair_id_ts** tab);
+void printList(struct pair_id_ts* head);
+int isElementAmongFirst(struct pair_id_ts* head, int id, int x);
+void removeNode(struct pair_id_ts** head, int id);
+void insert(struct pair_id_ts** head, int id, int ts);
+struct pair_id_ts* getElementByIndex(struct pair_id_ts* head, int index);
 
 #ifdef DEBUG
 #define debug(FORMAT,...) printf("%c[%d;%dm [timestamp:%d] [type: %s] [%d]: " FORMAT "%c[%d;%dm\n",  27, (1+(rank/7))%2, 31+(6+rank)%7, l_clock, type, rank, ##__VA_ARGS__, 27,0,37);

@@ -22,10 +22,13 @@ int nEye;
 int nGunpoint;
 int nBrownie;
 int nGnome;
+int nEyeLocal = 0;
+int nGunpointLocal = 0;
+int nGunLocal = 0;
 int nGun = 0;
-int* eyeRequestQueue;
-int* gPRequestQueue;
-int* gunRequestQueue;
+struct pair_id_ts *eyeRequestQueue;
+struct pair_id_ts *gPRequestQueue;
+struct pair_id_ts *gunRequestQueue;
 
 /*
  * Każdy proces ma dwa wątki - główny i komunikacyjny
@@ -36,6 +39,129 @@ int* gunRequestQueue;
 
 pthread_t threadKom;
 
+void sort(struct pair_id_ts** head) {
+    struct pair_id_ts* current;
+    struct pair_id_ts* next;
+    int swapped;
+
+    if (*head == NULL) {
+        return;
+    }
+
+    do {
+        swapped = 0;
+        current = *head;
+
+        while (current->next != NULL) {
+            next = current->next;
+
+            if (current->ts > next->ts) {
+                // Zamiana węzłów
+                if (current == *head) {
+                    *head = next;
+                } else {
+                    struct pair_id_ts* prev = *head;
+                    while (prev->next != current) {
+                        prev = prev->next;
+                    }
+                    prev->next = next;
+                }
+                current->next = next->next;
+                next->next = current;
+                swapped = 1;
+            }
+
+            current = next;
+        }
+    } while (swapped);
+}
+
+void printList(struct pair_id_ts* head) {
+    struct pair_id_ts* current = head;
+
+    while (current != NULL) {
+        printf("ID: %d, TS: %d\n", current->id, current->ts);
+        current = current->next;
+    }
+}
+
+int isElementAmongFirst(struct pair_id_ts* head, int id, int x) {
+    struct pair_id_ts* current = head;
+    int count = 0;
+
+    while (current != NULL && count < x) {
+        if (current->id == id) {
+            return 1;
+        }
+
+        current = current->next;
+        count++;
+    }
+
+    return 0;
+}
+
+struct pair_id_ts* getElementByIndex(struct pair_id_ts* head, int index) {
+    struct pair_id_ts* current = head;
+    int count = 0;
+
+    while (current != NULL) {
+        if (count == index) {
+            return current;
+        }
+
+        current = current->next;
+        count++;
+    }
+
+    return NULL;  // Jeśli indeks wykracza poza zakres listy
+}
+
+void insert(struct pair_id_ts** head, int id, int ts) {
+    struct pair_id_ts* new_node = malloc(sizeof(struct pair_id_ts));
+    new_node->id = id;
+    new_node->ts = ts;
+    new_node->next = NULL;
+
+    if (*head == NULL) {
+        *head = new_node;
+    } else {
+        struct pair_id_ts* current = *head;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = new_node;
+    }
+}
+
+void removeNode(struct pair_id_ts** head, int id) {
+    if (*head == NULL) {
+        return;
+    }
+
+    struct pair_id_ts* current = *head;
+    struct pair_id_ts* prev = NULL;
+
+    if (current != NULL && current->id == id) {
+        *head = current->next;
+        free(current);
+        return;
+    }
+
+    while (current != NULL && current->id != id) {
+        prev = current;
+        current = current->next;
+    }
+
+    if (current == NULL) {
+        return;
+    }
+
+    prev->next = current->next;
+    free(current);
+}
+
+
 void finalizuj()
 {
     pthread_mutex_destroy( &stateMut);
@@ -45,6 +171,9 @@ void finalizuj()
     MPI_Type_free(&MPI_PAKIET_T);
     MPI_Finalize();
     sem_destroy(&l_clock_sem);
+    free(gunRequestQueue);
+    free(gPRequestQueue);
+    free(eyeRequestQueue);
 }
 
 // void check_thread_support(int provided)
@@ -80,8 +209,11 @@ int main(int argc, char **argv)
     }
     nBrownie = atoi(argv[1]);
     nGnome = atoi(argv[2]);
-    nEye = atoi(argv[1]);
-    nGunpoint = atoi(argv[1]);
+    nEye = atoi(argv[3]);
+    nGunpoint = atoi(argv[4]);
+    eyeRequestQueue = NULL;
+    gPRequestQueue = NULL;
+    gunRequestQueue = NULL;
     sem_init(&l_clock_sem, 0, 1);
     MPI_Status status;
     int provided;
