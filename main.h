@@ -36,6 +36,8 @@ extern struct pair_id_ts *eyeRequestQueue;
 extern struct pair_id_ts *gPRequestQueue;
 extern struct pair_id_ts *gunRequestQueue;
 extern pthread_t threadKom;
+extern pthread_mutex_t mutex;
+extern pthread_cond_t condition;
 extern int l_clock; // zegar
 extern sem_t l_clock_sem; // semafor, broni dostępu do zmiennej zegara
 

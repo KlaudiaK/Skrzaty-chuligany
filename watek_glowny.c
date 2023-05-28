@@ -20,23 +20,35 @@ void mainLoop()
 
             debug("Zmieniam stan na wysyłanie");
             pkt = malloc(sizeof(packet_t));
+            sem_wait(&l_clock_sem);
             ackCountGp = 0;
             ackCountEye = 0;
             ackCountGp = 0;
+            sem_post(&l_clock_sem);
             if (strcmp(type, "GNOME") == 0) {
                 for (int i=0;i<=size-1;i++)
                     if (i!=rank) {
                         sendPacket(pkt, i, REQ_EYE);
                         sendPacket(pkt, i, REQ_GP);
+                        sem_wait(&l_clock_sem);
+                        insert(&eyeRequestQueue, i, l_clock);
+                        insert(&gPRequestQueue, i, l_clock);
+                        sort(&eyeRequestQueue);
+                        sort(&gPRequestQueue);
                         ts_of_last_sent_eye_req = l_clock;
                         ts_of_last_sent_gp_req = l_clock;
+                        sem_post(&l_clock_sem);
                     }
                 changeState( WAITING_FOR_EYE_AND_GUNPOINT );
             } else {
                 for (int i=0;i<=size-1;i++)
                     if (i!=rank) {
                         sendPacket( pkt, i, REQ_GUN);
+                        sem_wait(&l_clock_sem);
                         ts_of_last_sent_gun_req = l_clock;
+                        insert(&gunRequestQueue, i, l_clock);
+                        sort(&gunRequestQueue);
+                        sem_post(&l_clock_sem);
                     }
                 changeState( WAITING_FOR_GUN );
             }
@@ -47,11 +59,17 @@ void mainLoop()
             println("Czekam na wejście do sekcji krytycznej, wysłałem prośby o zasoby agrafek i celowników, czekam na odpowiedzi")
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
-            if ( ackCountEye == size - nEye && ackCountGp == size - nGunpoint && nEyeLocal < nEye && nGunpointLocal < nGunpoint) {
-                nGunpointLocal++;
-                nEyeLocal++;
-                changeState(PRODUCING_GUN);
+            pthread_mutex_lock(&mutex);
+            while (ackCountEye != size - 1 || ackCountGp != size - 1) {
+                pthread_cond_wait(&condition, &mutex);
             }
+            pthread_mutex_unlock(&mutex);
+
+            sem_wait(&l_clock_sem);
+            nEye--;
+            nGunpoint--;
+            sem_post(&l_clock_sem);
+            changeState(PRODUCING_GUN);
             break;
 	    case PRODUCING_GUN:
         // tutaj zapewne jakiś muteks albo zmienna warunkowa
@@ -64,14 +82,22 @@ void mainLoop()
             if (i!=rank) {
                 sendPacket( pkt, (rank+1)%size, GUN_PRODUCED);
             }
-
-            currentNode = gunRequestQueue;
-            while (currentNode != NULL) {
-                nGunLocal++;
-                sendPacket( pkt, currentNode->id, ACK_GUN);
-                currentNode = currentNode->next;
+            sem_wait(&l_clock_sem);
+            nGun++;
+            removeNode(&eyeRequestQueue, rank);
+            removeNode(&gPRequestQueue, rank);
+            sort(&eyeRequestQueue);
+            sort(&gPRequestQueue);
+            struct pair_id_ts* gunReqQueueHead = gunRequestQueue;
+            int count = 0;
+            while (gunReqQueueHead != NULL && count < nGun) {
+                sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
+                gunReqQueueHead = gunReqQueueHead->next;
+                removeNode(&gunRequestQueue, gunReqQueueHead->id);
+                count++;
             }
-            nGunLocal--;
+            sort(&gunRequestQueue);
+            sem_post(&l_clock_sem);
             changeState( FREE );
             free(pkt);
         //}
@@ -80,10 +106,15 @@ void mainLoop()
             println("Czekam na wejście do sekcji krytycznej, wysłałem prośby o zasób broni, czekam na odpowiedzi")
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
-            if ( ackCountGun == size - nGun && nGunLocal < nGun) {
-                nGunLocal++;
-                changeState(KILLING_RAT);
+            while (ackCountGun != size - 1) {
+                pthread_cond_wait(&condition, &mutex);
             }
+            pthread_mutex_unlock(&mutex);
+
+            sem_wait(&l_clock_sem);
+            nGun--;
+            sem_post(&l_clock_sem);
+            changeState(KILLING_RAT);
             break;
         case KILLING_RAT:
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
@@ -95,21 +126,30 @@ void mainLoop()
             for (int i=0;i<=size-1;i++)
                 if (i!=rank)
                     sendPacket( pkt, (rank+1)%size, RELEASE_GUN);
-            nGunpointLocal--;
-            nEyeLocal--;
-            currentNode = gPRequestQueue;
-            while (currentNode != NULL) {
-                nGunpointLocal++;
-                sendPacket( pkt, currentNode->id, ACK_GP);
-                currentNode = currentNode->next;
+            sem_wait(&l_clock_sem);
+            nEye++;
+            nGunpoint++;
+            removeNode(&gunRequestQueue, rank);
+            sort(&gunRequestQueue);
+            struct pair_id_ts* eyeReqQueueHead = eyeRequestQueue;
+            int count_eye = 0;
+            while (eyeReqQueueHead != NULL && count_eye < nGun) {
+                sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
+                eyeReqQueueHead = eyeReqQueueHead->next;
+                removeNode(&eyeReqQueueHead, eyeReqQueueHead->id);
+                count_eye++;
             }
-
-            currentNode = eyeRequestQueue;
-            while (currentNode != NULL) {
-                nEyeLocal++;
-                sendPacket( pkt, currentNode->id, ACK_EYE);
-                currentNode = currentNode->next;
+            struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
+            int count_gp = 0;
+            while (gpReqQueueHead != NULL && count_gp < nGun) {
+                sendPacket( 0, gpReqQueueHead->id, ACK_GP );
+                gpReqQueueHead = gpReqQueueHead->next;
+                removeNode(&gpReqQueueHead, gpReqQueueHead->id);
+                count_gp++;
             }
+            sort(&gpReqQueueHead);
+            sort(&eyeReqQueueHead);
+            sem_post(&l_clock_sem);
             changeState( FREE );
             free(pkt);
             //}

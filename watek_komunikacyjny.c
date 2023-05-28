@@ -1,6 +1,7 @@
 #include "main.h"
 #include "watek_komunikacyjny.h"
 
+
 /* wątek komunikacyjny; zajmuje się odbiorem i reakcją na komunikaty */
 void *startKomWatek(void *ptr) {
     MPI_Status status;
@@ -9,7 +10,7 @@ void *startKomWatek(void *ptr) {
 
     /* Obrazuje pętlę odbierającą pakiety o różnych typach */
     while (stan != InFinish) {
-        printList(eyeRequestQueue);debug("czekam na recv");
+        debug("czekam na recv");
         MPI_Recv(&pakiet, 1, MPI_PAKIET_T, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         sem_wait(&l_clock_sem);
         if (pakiet.ts > l_clock) {
@@ -19,164 +20,139 @@ void *startKomWatek(void *ptr) {
         }
         sem_post(&l_clock_sem);
 
-        if (strcmp(type, "GNOME") == 0) {
-            switch (status.MPI_TAG) {
-                case REQ_EYE:
-                    println("Dostałem EYE_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack",
-                            status.MPI_SOURCE, nEye);
-                    if (stan == WAITING_FOR_EYE_AND_GUNPOINT) {
-                        println("Ubiegam sie o sekcje krytyczna, sprawdze timestamp procesu ubiegajacego sie o zasob");
-                        if (pakiet.ts < ts_of_last_sent_eye_req) {
-                            println("Proces %d ma niższy timestamp od mojego, wysyłam mu ACK", status.MPI_SOURCE)
-                            nEyeLocal++;
-                            sendPacket(0, status.MPI_SOURCE, ACK_EYE);
-                        } else if (pakiet.ts == ts_of_last_sent_eye_req) {
-                            if (status.MPI_SOURCE < rank) {
-                                println("Proces %d ma równy timestamp, ale niższy rank, wysyłam mu ACK",
-                                        status.MPI_SOURCE);
-                                nEyeLocal++;
-                                sendPacket(0, status.MPI_SOURCE, ACK_EYE);
-                            } else {
-                                println("Proces %d ma równy timestamp, ale wyższy rank, NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                        status.MPI_SOURCE);
-                                insert(&eyeRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                            }
-                        } else {
-                            println("Proces %d ma wyższy timestamp, NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                    status.MPI_SOURCE);
-                            insert(&eyeRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                        }
-                    } else if (stan == PRODUCING_GUN) {
-                        println("Jestem w sekcji krytycznej NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                status.MPI_SOURCE);
-                        insert(&eyeRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                    } else {
-                        println("Wysyłam ack bez sprawdzania");
-                        nEyeLocal++;
-                        sendPacket(0, status.MPI_SOURCE, ACK_EYE);
-                    }
-                    break;
-                case REQ_GP:
-                    println("Dostałem GP_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack",
-                            status.MPI_SOURCE, nGunpoint);
-                    if (stan == WAITING_FOR_EYE_AND_GUNPOINT) {
-                        println("Ubiegam sie o sekcje krytyczna, sprawdze timestamp procesu ubiegajacego sie o zasob");
-                        if (pakiet.ts < ts_of_last_sent_gp_req) {
-                            println("Proces %d ma niższy timestamp od mojego, wysyłam mu ACK", status.MPI_SOURCE);
-                            nGunpointLocal++;
-                            sendPacket(0, status.MPI_SOURCE, ACK_GP);
-                        } else if (pakiet.ts == ts_of_last_sent_gp_req) {
-                            if (status.MPI_SOURCE < rank) {
-                                println("Proces %d ma równy timestamp, ale niższy rank, wysyłam mu ACK",
-                                        status.MPI_SOURCE);
-                                nGunpointLocal++;
-                                sendPacket(0, status.MPI_SOURCE, ACK_GP);
-                            } else {
-                                println("Proces %d ma równy timestamp, ale wyższy rank, NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                        status.MPI_SOURCE);
-                                insert(&gPRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                            }
-                        } else {
-                            println("Proces %d ma wyższy timestamp, NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                    status.MPI_SOURCE);
-                            insert(&gPRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                        }
-                    } else if (stan == PRODUCING_GUN) {
-                        println("Jestem w sekcji krytycznej NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                status.MPI_SOURCE);
-                        insert(&gPRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                    } else {
-                        println("Wysyłam ack bez sprawdzania");
-                        nGunpointLocal++;
-                        sendPacket(0, status.MPI_SOURCE, ACK_GP);
-                        break;
-                        case REQ_GUN:
-                            println("Dostałem GUN_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack",
-                                    status.MPI_SOURCE, nGun);
-                        println("Jestem gnomem i nie interesuje mnie ten zasób, wysyłam ACK");
-                        nGunLocal++;
-                        sendPacket(0, status.MPI_SOURCE, ACK_GUN);
-                        break;
-                        case RELEASE_GUN:
-                            nEyeLocal--;
-                        nGunpointLocal--;
-                        break;
-                        case GUN_PRODUCED:
-                            nGunLocal--;
-                        break;
-                        case ACK_GP:
-                            println("Dostałem ACK_GP od procesu %d, mam już %d", status.MPI_SOURCE, ackCountGp);
-                        ackCountGp++;
-                        break;
-                        case ACK_EYE:
-                            println("Dostałem ACK_EYE od procesu %d, mam już %d", status.MPI_SOURCE, ackCountEye);
-                        ackCountEye++;
-                        break;
+        switch ( status.MPI_TAG ) {
+            case REQ_EYE:
+                println("Dostałem EYE_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack", status.MPI_SOURCE, nEye);
+                sem_wait(&l_clock_sem);
+                insert(&eyeRequestQueue, status.MPI_SOURCE, pakiet.ts);
+                sort(&eyeRequestQueue);
+                printList(eyeRequestQueue);
+                println("MAM %D AGRAFEK", nEye);
+                if (isElementAmongFirst(eyeRequestQueue, status.MPI_SOURCE, nEye) == 1) {
+                    println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
+                    sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
+                    nEye--;
+                } else {
+                    println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
+                }
+                sem_post(&l_clock_sem);
+                break;
+            case REQ_GP:
+                println("Dostałem GP_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack",status.MPI_SOURCE, nGunpoint);
+                sem_wait(&l_clock_sem);
+                insert(&gPRequestQueue, status.MPI_SOURCE, pakiet.ts);
+                sort(&gPRequestQueue);
+                if (isElementAmongFirst(gPRequestQueue, status.MPI_SOURCE, nGunpoint) == 1) {
+                    println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
+                    sendPacket( 0, status.MPI_SOURCE, ACK_GP );
+                    nGunpoint--;
+                } else {
+                    println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
+                }
+                sem_post(&l_clock_sem);
+                break;
+            case REQ_GUN:
+                println("Dostałem GUN_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack", status.MPI_SOURCE, nGun);
+                sem_wait(&l_clock_sem);
+                insert(&gunRequestQueue, status.MPI_SOURCE, pakiet.ts);
+                sort(&gunRequestQueue);
+                if (isElementAmongFirst(gunRequestQueue, status.MPI_SOURCE, nGun) == 1) {
+                    println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
+                    sendPacket( 0, status.MPI_SOURCE, ACK_GUN );
+                    nGun--;
+                } else {
+                    println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
+                }
+                sem_post(&l_clock_sem);                break;
+            case ACK_EYE:
+                debug("Dostałem ACK_EYE od %d, mam już %d", status.MPI_SOURCE, ackCountEye);
+                pthread_mutex_lock(&mutex);
+                if (stan == WAITING_FOR_EYE_AND_GUNPOINT) {
+                    ackCountGp++;
+                    if (ackCountEye == size - 1 && ackCountGp == size - 1) {
+                        pthread_cond_signal(&condition);
                     }
                 }
-            } else if (strcmp(type, "BROWNIE") == 0) {
-                switch (status.MPI_TAG) {
-                    case REQ_EYE:
-                        println("Dostałem REQ_EYE od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack",
-                                status.MPI_SOURCE, nEye);
-                        println("Jestem SKRZATEM i nie interesuje mnie ten zasób, wysyłam ACK");
-                        nEyeLocal++;
-                        sendPacket(0, status.MPI_SOURCE, ACK_EYE);
-                        break;
-                    case REQ_GP:
-                        println("Dostałem ACK_GP od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack",
-                                status.MPI_SOURCE, nGunpoint);
-                        println("Jestem gnomem i nie interesuje mnie ten zasób, wysyłam ACK");
-                        nGunpointLocal++;
-                        sendPacket(0, status.MPI_SOURCE, ACK_GP);
-                        break;
-                    case REQ_GUN:
-                        println("Dostałem GUN_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack",
-                                status.MPI_SOURCE, nGun);
-                        if (stan == WAITING_FOR_GUN) {
-                            println("Ubiegam sie o sekcje krytyczna, sprawdze timestamp procesu ubiegajacego sie o zasob");
-                            if (pakiet.ts < ts_of_last_sent_gun_req) {
-                                println("Proces %d ma niższy timestamp od mojego, wysyłam mu ACK", status.MPI_SOURCE);
-                                nGunLocal++;
-                                sendPacket(0, status.MPI_SOURCE, ACK_GUN);
-                            } else if (pakiet.ts == ts_of_last_sent_gun_req) {
-                                if (status.MPI_SOURCE < rank) {
-                                    println("Proces %d ma równy timestamp, ale niższy rank, wysyłam mu ACK",
-                                            status.MPI_SOURCE);
-                                    nGunLocal++;
-                                    sendPacket(0, status.MPI_SOURCE, ACK_GUN);
-                                } else {
-                                    println("Proces %d ma równy timestamp, ale wyższy rank, NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                            status.MPI_SOURCE);
-                                    insert(&gunRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                                }
-                            } else {
-                                println("Proces %d ma wyższy timestamp, NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                        status.MPI_SOURCE);
-                                insert(&gunRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                            }
-                        } else if (stan == KILLING_RAT) {
-                            println("Jestem w sekcji krytycznej NIE wysyłam mu ACK, dodaje na liste oczekujacych",
-                                    status.MPI_SOURCE);
-                            insert(&gunRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                        } else {
-                            println("Wysyłam ack bez sprawdzania");
-                            nGunLocal++;
-                            sendPacket(0, status.MPI_SOURCE, ACK_GUN);
-                        }
-                        break;
-                    case RELEASE_GUN:
-                        nEyeLocal--;
-                        nGunpointLocal--;
-                        break;
-                    case GUN_PRODUCED:
-                        nGunLocal--;
-                        break;
-                    case ACK_GUN:
-                        println("Dostałem ACK_GUN od procesu %d, mam już %d", status.MPI_SOURCE, ackCountGun);
-                        ackCountGun++;
-                        break;
-            }
+                pthread_mutex_unlock(&mutex);
+                break;
+            case ACK_GUN:
+                debug("Dostałem ACK_GUN od %d, mam już %d", status.MPI_SOURCE, ackCountGun);
+                pthread_mutex_lock(&mutex);
+                if (stan == WAITING_FOR_GUN) {
+                    ackCountGun++;
+                    if (ackCountGun == size - 1 ) {
+                        pthread_cond_signal(&condition);
+                    }
+                }
+                pthread_mutex_unlock(&mutex);
+                break;
+            case ACK_GP:
+                debug("Dostałem ACK_GP od %d, mam już %d", status.MPI_SOURCE, ackCountGp);
+                pthread_mutex_lock(&mutex);
+                if (stan == WAITING_FOR_EYE_AND_GUNPOINT) {
+                    ackCountGp++;
+                    if (ackCountEye == size - 1 && ackCountGp == size - 1) {
+                        pthread_cond_signal(&condition);
+                    }
+                }
+                pthread_mutex_unlock(&mutex);
+                break;
+            case RELEASE_GUN:
+                debug("Dostałem RELEASE_GUN od %d, zwiekszam zasoby agrafek i celownikow", status.MPI_SOURCE);
+                sem_wait(&l_clock_sem);
+                nEye++;
+                nGunpoint++;
+                nGun--;
+                removeNode(&gunRequestQueue, status.MPI_SOURCE);
+                sort(&gunRequestQueue);
+                sort(&gPRequestQueue);
+                sort(&eyeRequestQueue);
+                struct pair_id_ts* eyeReqQueueHead = eyeRequestQueue;
+                int count_eye = 0;
+                while (eyeReqQueueHead != NULL && count_eye < nGun) {
+                    sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
+                    eyeReqQueueHead = eyeReqQueueHead->next;
+                    removeNode(&eyeRequestQueue, eyeReqQueueHead->id);
+                    count_eye++;
+                    nEye--;
+                }
+                struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
+                int count_gp = 0;
+                while (gpReqQueueHead != NULL && count_gp < nGun) {
+                    sendPacket( 0, gpReqQueueHead->id, ACK_GP );
+                    gpReqQueueHead = gpReqQueueHead->next;
+                    removeNode(&gPRequestQueue, gpReqQueueHead->id);
+                    count_gp++;
+                    nGunpoint--;
+                }
+                sort(&gpReqQueueHead);
+                sort(&eyeReqQueueHead);
+
+                sem_post(&l_clock_sem);
+                break;
+            case GUN_PRODUCED:
+                debug("Dostałem GUN_PRODUCED od %d, zwiekszam dostepnosc broni", status.MPI_SOURCE);
+                sem_wait(&l_clock_sem);
+                nGun++;
+                removeNode(&eyeRequestQueue, status.MPI_SOURCE);
+                removeNode(&gPRequestQueue, status.MPI_SOURCE);
+                sort(&eyeRequestQueue);
+                sort(&gPRequestQueue);
+                sort(&gunRequestQueue);
+                struct pair_id_ts* gunReqQueueHead = gunRequestQueue;
+                int count = 0;
+                while (gunReqQueueHead != NULL && count < nGun) {
+                    sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
+                    gunReqQueueHead = gunReqQueueHead->next;
+                    removeNode(&gunRequestQueue, gunReqQueueHead->id);
+                    count++;
+                    nGun--;
+                }
+                sort(&gunRequestQueue);
+                sem_post(&l_clock_sem);
+                break;
+            default:
+                break;
         }
     }
 }

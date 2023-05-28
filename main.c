@@ -17,6 +17,8 @@ int ackCountGun = 0;
 int ackCountGp = 0;
 int l_clock = 0;
 sem_t l_clock_sem;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
 char* type;
 int nEye;
 int nGunpoint;
