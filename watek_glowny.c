@@ -9,6 +9,7 @@ void mainLoop()
     while (stan != InFinish) {
 	switch (stan) {
         case FREE:
+            sleep(1 + rand() % 5);
             if (strcmp(type, "GNOME") == 0) {
                 println("JESTEM GNOMEM");
                 println("Ubiegam się o zasoby Agrafka i Celownik, chce wejsc do sekcji krytycznej i stworzyć broń");
@@ -24,7 +25,6 @@ void mainLoop()
             ackCountEye = 0;
             ackCountGp = 0;
             if (strcmp(type, "GNOME") == 0) {
-                changeState( WAITING_FOR_EYE_AND_GUNPOINT );
                 insert(&eyeRequestQueue, rank, l_clock);
                 insert(&gPRequestQueue, rank, l_clock);
                 sort(&eyeRequestQueue);
@@ -34,23 +34,25 @@ void mainLoop()
                         sendPacketWithoutIncreasingTimeStamp(pkt, i, REQ_EYE);
                         sendPacketWithoutIncreasingTimeStamp(pkt, i, REQ_GP);
                         sem_wait(&l_clock_sem);
-                        l_clock++;
                         ts_of_last_sent_eye_req = l_clock;
                         ts_of_last_sent_gp_req = l_clock;
+                        l_clock++;
                         sem_post(&l_clock_sem);
                     }
+                changeState( WAITING_FOR_EYE_AND_GUNPOINT );
+
             } else {
-                changeState( WAITING_FOR_GUN );
                 insert(&gunRequestQueue, rank, l_clock);
                 sort(&gunRequestQueue);
                 for (int i=0;i<=size-1;i++)
                     if (i!=rank) {
                         sendPacketWithoutIncreasingTimeStamp( pkt, i, REQ_GUN);
                         sem_wait(&l_clock_sem);
-                        l_clock++;
                         ts_of_last_sent_gun_req = l_clock;
+                        l_clock++;
                         sem_post(&l_clock_sem);
                     }
+                changeState( WAITING_FOR_GUN );
             }
             free(pkt);
             debug("Skończyłem wysyłać prośby o zasoby, teraz będę czekał na pozwolenia od innych procesów");
@@ -78,7 +80,7 @@ void mainLoop()
 	    case PRODUCING_GUN:
         // tutaj zapewne jakiś muteks albo zmienna warunkowa
             println("Jestem w sekcji krytycznej, produkuję broń z zasobów");
-            sleep(5);
+            sleep(1 + rand() % 5);
             println("Wychodzę z sekcji krytycznej, wytworzyłem broń")
             debug("Zmieniam stan na wysyłanie");
             pkt = malloc(sizeof(packet_t));
@@ -94,7 +96,7 @@ void mainLoop()
             sort(&gPRequestQueue);
             struct pair_id_ts* gunReqQueueHead = gunRequestQueue;
             int count = 0;
-            while (gunReqQueueHead != NULL && count < nGun) {
+            while (gunReqQueueHead != NULL && count <= nGun) {
                 sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
                 gunReqQueueHead = gunReqQueueHead->next;
                 removeNode(&gunRequestQueue, gunReqQueueHead->id);
@@ -124,7 +126,7 @@ void mainLoop()
         case KILLING_RAT:
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             println("Jestem w sekcji krytycznej, zabijam szczury");
-            sleep(5);
+            sleep(1 + rand() % 5);
             println("Wychodzę z sekcji krytycznej, zabiłem szczury")
             debug("Zmieniam stan na wysyłanie");
             pkt = malloc(sizeof(packet_t));
@@ -138,7 +140,7 @@ void mainLoop()
             sort(&gunRequestQueue);
             struct pair_id_ts* eyeReqQueueHead = eyeRequestQueue;
             int count_eye = 0;
-            while (eyeReqQueueHead != NULL && count_eye < nGun) {
+            while (eyeReqQueueHead != NULL && count_eye <= nEye) {
                 sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
                 eyeReqQueueHead = eyeReqQueueHead->next;
                 removeNode(&eyeReqQueueHead, eyeReqQueueHead->id);
@@ -146,7 +148,7 @@ void mainLoop()
             }
             struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
             int count_gp = 0;
-            while (gpReqQueueHead != NULL && count_gp < nGun) {
+            while (gpReqQueueHead != NULL && count_gp <= nGunpoint) {
                 sendPacket( 0, gpReqQueueHead->id, ACK_GP );
                 gpReqQueueHead = gpReqQueueHead->next;
                 removeNode(&gpReqQueueHead, gpReqQueueHead->id);
@@ -163,5 +165,6 @@ void mainLoop()
 		    break;
     }
         sleep(SEC_IN_STATE);
+        sleep(1 + rand() % 5);
     }
 }
