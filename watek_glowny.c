@@ -20,47 +20,51 @@ void mainLoop()
 
             debug("Zmieniam stan na wysyłanie");
             pkt = malloc(sizeof(packet_t));
-            sem_wait(&l_clock_sem);
             ackCountGp = 0;
             ackCountEye = 0;
             ackCountGp = 0;
-            sem_post(&l_clock_sem);
             if (strcmp(type, "GNOME") == 0) {
+                changeState( WAITING_FOR_EYE_AND_GUNPOINT );
+                insert(&eyeRequestQueue, rank, l_clock);
+                insert(&gPRequestQueue, rank, l_clock);
+                sort(&eyeRequestQueue);
+                sort(&gPRequestQueue);
                 for (int i=0;i<=size-1;i++)
                     if (i!=rank) {
-                        sendPacket(pkt, i, REQ_EYE);
-                        sendPacket(pkt, i, REQ_GP);
+                        sendPacketWithoutIncreasingTimeStamp(pkt, i, REQ_EYE);
+                        sendPacketWithoutIncreasingTimeStamp(pkt, i, REQ_GP);
                         sem_wait(&l_clock_sem);
-                        insert(&eyeRequestQueue, i, l_clock);
-                        insert(&gPRequestQueue, i, l_clock);
-                        sort(&eyeRequestQueue);
-                        sort(&gPRequestQueue);
+                        l_clock++;
                         ts_of_last_sent_eye_req = l_clock;
                         ts_of_last_sent_gp_req = l_clock;
                         sem_post(&l_clock_sem);
                     }
-                changeState( WAITING_FOR_EYE_AND_GUNPOINT );
             } else {
+                changeState( WAITING_FOR_GUN );
+                insert(&gunRequestQueue, rank, l_clock);
+                sort(&gunRequestQueue);
                 for (int i=0;i<=size-1;i++)
                     if (i!=rank) {
-                        sendPacket( pkt, i, REQ_GUN);
+                        sendPacketWithoutIncreasingTimeStamp( pkt, i, REQ_GUN);
                         sem_wait(&l_clock_sem);
+                        l_clock++;
                         ts_of_last_sent_gun_req = l_clock;
-                        insert(&gunRequestQueue, i, l_clock);
-                        sort(&gunRequestQueue);
                         sem_post(&l_clock_sem);
                     }
-                changeState( WAITING_FOR_GUN );
             }
             free(pkt);
             debug("Skończyłem wysyłać prośby o zasoby, teraz będę czekał na pozwolenia od innych procesów");
             break;
 	    case WAITING_FOR_EYE_AND_GUNPOINT:
             println("Czekam na wejście do sekcji krytycznej, wysłałem prośby o zasoby agrafek i celowników, czekam na odpowiedzi")
+            println("MAM %d ack na eye i %d ack na gp", ackCountEye, ackCountGp);
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
             pthread_mutex_lock(&mutex);
-            while (ackCountEye != size - 1 || ackCountGp != size - 1) {
+            while (ackCountEye != size - 1 || ackCountGp != size - 1
+            || isElementAmongFirst(eyeRequestQueue, rank, nEye) != 1
+            || isElementAmongFirst(gPRequestQueue, rank, nGunpoint) != 1
+            ) {
                 pthread_cond_wait(&condition, &mutex);
             }
             pthread_mutex_unlock(&mutex);
@@ -80,7 +84,7 @@ void mainLoop()
             pkt = malloc(sizeof(packet_t));
             for (int i=0;i<=size-1;i++)
             if (i!=rank) {
-                sendPacket( pkt, (rank+1)%size, GUN_PRODUCED);
+                sendPacket( pkt, i, GUN_PRODUCED);
             }
             sem_wait(&l_clock_sem);
             nGun++;
@@ -106,7 +110,8 @@ void mainLoop()
             println("Czekam na wejście do sekcji krytycznej, wysłałem prośby o zasób broni, czekam na odpowiedzi")
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
-            while (ackCountGun != size - 1) {
+            while (ackCountGun != size - 1 ||
+            isElementAmongFirst(gunRequestQueue, rank, nGun) != 1) {
                 pthread_cond_wait(&condition, &mutex);
             }
             pthread_mutex_unlock(&mutex);
@@ -125,7 +130,7 @@ void mainLoop()
             pkt = malloc(sizeof(packet_t));
             for (int i=0;i<=size-1;i++)
                 if (i!=rank)
-                    sendPacket( pkt, (rank+1)%size, RELEASE_GUN);
+                    sendPacket( pkt, i, RELEASE_GUN);
             sem_wait(&l_clock_sem);
             nEye++;
             nGunpoint++;
