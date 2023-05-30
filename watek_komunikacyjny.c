@@ -132,7 +132,7 @@ void *startKomWatek(void *ptr) {
                 sort(&eyeRequestQueue);
                 struct pair_id_ts* eyeReqQueueHead = eyeRequestQueue;
                 int count_eye = 0;
-                while (eyeReqQueueHead != NULL && count_eye < nGun) {
+                while (eyeReqQueueHead != NULL && count_eye < nEye) {
                     sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
                     eyeReqQueueHead = eyeReqQueueHead->next;
                     removeNode(&eyeRequestQueue, eyeReqQueueHead->id);
@@ -141,7 +141,7 @@ void *startKomWatek(void *ptr) {
                 }
                 struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
                 int count_gp = 0;
-                while (gpReqQueueHead != NULL && count_gp < nGun) {
+                while (gpReqQueueHead != NULL && count_gp < nGunpoint) {
                     sendPacket( 0, gpReqQueueHead->id, ACK_GP );
                     gpReqQueueHead = gpReqQueueHead->next;
                     removeNode(&gPRequestQueue, gpReqQueueHead->id);
