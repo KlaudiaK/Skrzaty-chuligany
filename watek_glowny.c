@@ -63,7 +63,7 @@ void mainLoop()
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
             pthread_mutex_lock(&mutex);
-            while (ackCountEye != size - 1 || ackCountGp != size - 1
+            while (ackCountEye < size - 1 || ackCountGp < size - 1
             || isElementAmongFirst(eyeRequestQueue, rank, nEye) != 1
             || isElementAmongFirst(gPRequestQueue, rank, nGunpoint) != 1
             ) {

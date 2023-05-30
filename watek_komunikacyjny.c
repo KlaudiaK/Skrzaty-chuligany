@@ -94,9 +94,7 @@ void *startKomWatek(void *ptr) {
                 debug("Dostałem ACK_EYE od %d, mam już %d", status.MPI_SOURCE, ackCountEye);
                 pthread_mutex_lock(&mutex);
                 ackCountEye++;
-                if (ackCountEye == size - 1 && ackCountGp == size - 1
-                    && isElementAmongFirst(eyeRequestQueue, rank, nEye) == 1
-                    && isElementAmongFirst(gPRequestQueue, rank, nGunpoint) == 1
+                if (ackCountEye == size - 1 && isElementAmongFirst(eyeRequestQueue, rank, nEye) == 1) == 1
                 ) {
                     pthread_cond_signal(&condition);
                 }
@@ -117,7 +115,7 @@ void *startKomWatek(void *ptr) {
                 debug("Dostałem ACK_GP od %d, mam już %d", status.MPI_SOURCE, ackCountGp);
                 pthread_mutex_lock(&mutex);
                 ackCountGp++;
-                if (ackCountEye == size - 1 && ackCountGp == size - 1) {
+                if (ackCountGp == size - 1 && && isElementAmongFirst(gpRequestQueue, rank, nGunpoint) == 1) {
                     pthread_cond_signal(&condition);
                 }
                 pthread_mutex_unlock(&mutex);
