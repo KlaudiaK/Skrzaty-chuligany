@@ -166,8 +166,8 @@ void *startKomWatek(void *ptr) {
                 int count = 0;
                 while (gunReqQueueHead != NULL && count < nGun) {
                     sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
-                    gunReqQueueHead = gunReqQueueHead->next;
                     removeNode(&gunRequestQueue, gunReqQueueHead->id);
+                     gunReqQueueHead = gunReqQueueHead->next;
                     count++;
                     nGun--;
                 }
