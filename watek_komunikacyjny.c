@@ -24,16 +24,14 @@ void *startKomWatek(void *ptr) {
             case REQ_EYE:
                 println("Dostałem EYE_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack", status.MPI_SOURCE, nEye);
                 pthread_mutex_lock(&mutex);
+                insert(&eyeRequestQueue, status.MPI_SOURCE, pakiet.ts);
+                sort(&eyeRequestQueue);
                 if (stan == FREE) {
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
                     sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
                     nEye--;
-                    insert(&eyeRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                    sort(&eyeRequestQueue);
                 } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                    insert(&eyeRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                    sort(&eyeRequestQueue);
-                    if (isElementAmongFirst(eyeRequestQueue, status.MPI_SOURCE, nEye) == 1) {
+                    if (pakiet.ts < ts_of_last_sent_eye_req) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
                         sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
                         nEye--;
@@ -46,21 +44,19 @@ void *startKomWatek(void *ptr) {
             case REQ_GP:
                 println("Dostałem GP_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack",status.MPI_SOURCE, nGunpoint);
                 pthread_mutex_lock(&mutex);
+                insert(&gPRequestQueue, status.MPI_SOURCE, pakiet.ts);
+                sort(&gPRequestQueue);
                 if (stan == FREE) {
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                             status.MPI_SOURCE);
                     sendPacket(0, status.MPI_SOURCE, ACK_GP);
                     nGunpoint--;
-                    insert(&gPRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                    sort(&gPRequestQueue);
                 } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                    if (isElementAmongFirst(gPRequestQueue, status.MPI_SOURCE, nGunpoint) == 1) {
+                    if (pakiet.ts < ts_of_last_sent_gp_req) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GP);
                         nGunpoint--;
-                        insert(&gPRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                        sort(&gPRequestQueue);
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
@@ -70,21 +66,19 @@ void *startKomWatek(void *ptr) {
             case REQ_GUN:
                 println("Dostałem GUN_REQ od procesu %d, mam %d tego zasobu, sprawdzam czy moge wysłać ack", status.MPI_SOURCE, nGun);
                 pthread_mutex_lock(&mutex);
+                insert(&gunRequestQueue, status.MPI_SOURCE, pakiet.ts);
+                sort(&gunRequestQueue);
                 if (stan == FREE) {
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                             status.MPI_SOURCE);
                     sendPacket(0, status.MPI_SOURCE, ACK_GUN);
                     nGun--;
-                    insert(&gunRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                    sort(&gunRequestQueue);
                 } else if (stan == WAITING_FOR_GUN || stan == KILLING_RAT) {
-                    if (isElementAmongFirst(gunRequestQueue, status.MPI_SOURCE, nGun) == 1) {
+                    if (pakiet.ts < ts_of_last_sent_gun_req) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GUN);
                         nGun--;
-                        insert(&gunRequestQueue, status.MPI_SOURCE, pakiet.ts);
-                        sort(&gunRequestQueue);
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
@@ -135,7 +129,6 @@ void *startKomWatek(void *ptr) {
                 while (eyeReqQueueHead != NULL && count_eye < nEye) {
                     sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
                     eyeReqQueueHead = eyeReqQueueHead->next;
-                    removeNode(&eyeRequestQueue, eyeReqQueueHead->id);
                     count_eye++;
                     nEye--;
                 }
@@ -144,12 +137,11 @@ void *startKomWatek(void *ptr) {
                 while (gpReqQueueHead != NULL && count_gp < nGunpoint) {
                     sendPacket( 0, gpReqQueueHead->id, ACK_GP );
                     gpReqQueueHead = gpReqQueueHead->next;
-                    removeNode(&gPRequestQueue, gpReqQueueHead->id);
                     count_gp++;
                     nGunpoint--;
                 }
-                sort(&gpReqQueueHead);
-                sort(&eyeReqQueueHead);
+                sort(&gPRequestQueue);
+                sort(&eyeRequestQueue);
 
                 pthread_mutex_unlock(&mutex);
                 break;
@@ -167,7 +159,6 @@ void *startKomWatek(void *ptr) {
                 while (gunReqQueueHead != NULL && count < nGun) {
                     sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
                     gunReqQueueHead = gunReqQueueHead->next;
-                    removeNode(&gunRequestQueue, gunReqQueueHead->id);
                     count++;
                     nGun--;
                 }

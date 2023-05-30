@@ -96,11 +96,11 @@ void mainLoop()
             sort(&gPRequestQueue);
             struct pair_id_ts* gunReqQueueHead = gunRequestQueue;
             int count = 0;
-            while (gunReqQueueHead != NULL && count <= nGun) {
+            while (gunReqQueueHead != NULL && count < nGun) {
                 sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
                 gunReqQueueHead = gunReqQueueHead->next;
-                removeNode(&gunRequestQueue, gunReqQueueHead->id);
                 count++;
+                nGun--;
             }
             sort(&gunRequestQueue);
             sem_post(&l_clock_sem);
@@ -140,22 +140,23 @@ void mainLoop()
             sort(&gunRequestQueue);
             struct pair_id_ts* eyeReqQueueHead = eyeRequestQueue;
             int count_eye = 0;
-            while (eyeReqQueueHead != NULL && count_eye <= nEye) {
+            while (eyeReqQueueHead != NULL && count_eye < nEye) {
                 sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
                 eyeReqQueueHead = eyeReqQueueHead->next;
-                removeNode(&eyeReqQueueHead, eyeReqQueueHead->id);
                 count_eye++;
+                nEye--;
             }
             struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
             int count_gp = 0;
-            while (gpReqQueueHead != NULL && count_gp <= nGunpoint) {
+            while (gpReqQueueHead != NULL && count_gp < nGunpoint) {
                 sendPacket( 0, gpReqQueueHead->id, ACK_GP );
                 gpReqQueueHead = gpReqQueueHead->next;
-                removeNode(&gpReqQueueHead, gpReqQueueHead->id);
+                removeNode(&gPRequestQueue, gpReqQueueHead->id);
                 count_gp++;
+                nGunpoint--;
             }
-            sort(&gpReqQueueHead);
-            sort(&eyeReqQueueHead);
+            sort(&gPRequestQueue);
+            sort(&gPRequestQueue);
             sem_post(&l_clock_sem);
             changeState( FREE );
             free(pkt);
