@@ -25,9 +25,9 @@ struct tagNames_t{
                 {"zwolnienie sekcji krytycznej, wyprodukowanie innego typu zasobu", RELEASE_GUN},
                 {"potwierdzenie dostepu do zasobu agrafki", ACK_EYE},
                 {"potwierdzenie dostepu do zasobu celownika", ACK_GP},
-                {"prośbę o sekcję krytyczną dostepu do zasobu agrafka", REQ_GP},
+                {"prośbę o sekcję krytyczną dostepu do zasobu celownik", REQ_GP},
                 {"potwierdzenie dostepu do zasobu broni", ACK_GUN},
-                {"prośbę o sekcję krytyczną dostepu do zasobu agrafka", REQ_GUN},
+                {"prośbę o sekcję krytyczną dostepu do zasobu broni", REQ_GUN},
                 {"zwolnienie sekcji krytycznej, oddanie zasobów do puli",GUN_PRODUCED}
 };
 int ts_of_last_sent_eye_req = 0;

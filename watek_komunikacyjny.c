@@ -31,13 +31,17 @@ void *startKomWatek(void *ptr) {
                     sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
                     nEye--;
                 } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                    if (pakiet.ts < ts_of_last_sent_eye_req) {
+                    if (isElementAmongFirst(eyeRequestQueue, status.MPI_SOURCE, nEye)) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
                         sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
                         nEye--;
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
+                } else {
+                    println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
+                        sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
+                        nEye--;
                 }
                 pthread_mutex_unlock(&mutex);
                 break;
@@ -52,7 +56,7 @@ void *startKomWatek(void *ptr) {
                     sendPacket(0, status.MPI_SOURCE, ACK_GP);
                     nGunpoint--;
                 } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                    if (pakiet.ts < ts_of_last_sent_gp_req) {
+                    if (isElementAmongFirst(gPRequestQueue, status.MPI_SOURCE, nGunpoint)) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GP);
@@ -60,6 +64,11 @@ void *startKomWatek(void *ptr) {
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
+                } else {
+                    println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
+                                status.MPI_SOURCE);
+                        sendPacket(0, status.MPI_SOURCE, ACK_GP);
+                        nGunpoint--;
                 }
                 pthread_mutex_unlock(&mutex);
                 break;
@@ -74,7 +83,7 @@ void *startKomWatek(void *ptr) {
                     sendPacket(0, status.MPI_SOURCE, ACK_GUN);
                     nGun--;
                 } else if (stan == WAITING_FOR_GUN || stan == KILLING_RAT) {
-                    if (pakiet.ts < ts_of_last_sent_gun_req) {
+                    if (isElementAmongFirst(gunRequestQueue, status.MPI_SOURCE, nGun)) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GUN);
@@ -82,6 +91,11 @@ void *startKomWatek(void *ptr) {
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
+                } else {
+                    println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
+                                status.MPI_SOURCE);
+                        sendPacket(0, status.MPI_SOURCE, ACK_GUN);
+                        nGun--;
                 }
                 pthread_mutex_unlock(&mutex);
             case ACK_EYE:
@@ -127,18 +141,36 @@ void *startKomWatek(void *ptr) {
                 struct pair_id_ts* eyeReqQueueHead = eyeRequestQueue;
                 int count_eye = 0;
                 while (eyeReqQueueHead != NULL && count_eye < nEye) {
-                    sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
-                    eyeReqQueueHead = eyeReqQueueHead->next;
-                    count_eye++;
-                    nEye--;
+                    if (eyeReqQueueHead->id == rank)
+                    {
+                        if (ackCountEye == size - 1
+                        && isElementAmongFirst(eyeReqQueueHead, rank, nEye) == 1
+                        ){
+                            pthread_cond_signal(&condition);
+                        }
+                    } else {
+                        sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
+                        eyeReqQueueHead = eyeReqQueueHead->next;
+                        count_eye++;
+                        nEye--;
+                    }
                 }
                 struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
                 int count_gp = 0;
                 while (gpReqQueueHead != NULL && count_gp < nGunpoint) {
-                    sendPacket( 0, gpReqQueueHead->id, ACK_GP );
-                    gpReqQueueHead = gpReqQueueHead->next;
-                    count_gp++;
-                    nGunpoint--;
+                    if (gpReqQueueHead->id == rank)
+                    {
+                        if (ackCountGp == size - 1
+                        && isElementAmongFirst(gpReqQueueHead, rank, nGunpoint) == 1
+                        ){
+                            pthread_cond_signal(&condition);
+                        }
+                    } else {
+                        sendPacket( 0, gpReqQueueHead->id, ACK_GP );
+                        gpReqQueueHead = gpReqQueueHead->next;
+                        count_gp++;
+                        nGunpoint--;
+                    }
                 }
                 sort(&gPRequestQueue);
                 sort(&eyeRequestQueue);
@@ -157,10 +189,19 @@ void *startKomWatek(void *ptr) {
                 struct pair_id_ts* gunReqQueueHead = gunRequestQueue;
                 int count = 0;
                 while (gunReqQueueHead != NULL && count < nGun) {
-                    sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
-                    gunReqQueueHead = gunReqQueueHead->next;
-                    count++;
-                    nGun--;
+                    if (gunReqQueueHead->id == rank)
+                    {
+                        if (ackCountGun == size - 1
+                        && isElementAmongFirst(gunRequestQueue, rank, nGun) == 1
+                        ){
+                            pthread_cond_signal(&condition);
+                        }
+                    } else {
+                        sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
+                        gunReqQueueHead = gunReqQueueHead->next;
+                        count++;
+                        nGun--;
+                    }
                 }
                 sort(&gunRequestQueue);
                 pthread_mutex_unlock(&mutex);

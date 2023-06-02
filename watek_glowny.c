@@ -33,12 +33,12 @@ void mainLoop()
                     if (i!=rank) {
                         sendPacketWithoutIncreasingTimeStamp(pkt, i, REQ_EYE);
                         sendPacketWithoutIncreasingTimeStamp(pkt, i, REQ_GP);
-                        sem_wait(&l_clock_sem);
-                        ts_of_last_sent_eye_req = l_clock;
-                        ts_of_last_sent_gp_req = l_clock;
-                        l_clock++;
-                        sem_post(&l_clock_sem);
                     }
+                sem_wait(&l_clock_sem);
+                ts_of_last_sent_eye_req = l_clock;
+                ts_of_last_sent_gp_req = l_clock;
+                l_clock++;
+                sem_post(&l_clock_sem);
                 changeState( WAITING_FOR_EYE_AND_GUNPOINT );
 
             } else {
@@ -47,11 +47,12 @@ void mainLoop()
                 for (int i=0;i<=size-1;i++)
                     if (i!=rank) {
                         sendPacketWithoutIncreasingTimeStamp( pkt, i, REQ_GUN);
-                        sem_wait(&l_clock_sem);
-                        ts_of_last_sent_gun_req = l_clock;
-                        l_clock++;
-                        sem_post(&l_clock_sem);
                     }
+
+                sem_wait(&l_clock_sem);
+                ts_of_last_sent_gun_req = l_clock;
+                l_clock++;
+                sem_post(&l_clock_sem);
                 changeState( WAITING_FOR_GUN );
             }
             free(pkt);

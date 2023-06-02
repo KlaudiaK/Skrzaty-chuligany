@@ -71,6 +71,19 @@ void sort(struct pair_id_ts** head) {
                 current->next = next->next;
                 next->next = current;
                 swapped = 1;
+            } else if (current->ts == next->ts && current->id > next->id) {
+                if (current == *head) {
+                    *head = next;
+                } else {
+                    struct pair_id_ts* prev = *head;
+                    while (prev->next != current) {
+                        prev = prev->next;
+                    }
+                    prev->next = next;
+                }
+                current->next = next->next;
+                next->next = current;
+                swapped = 1;
             }
 
             current = next;
@@ -91,7 +104,7 @@ int isElementAmongFirst(struct pair_id_ts* head, int id, int x) {
     struct pair_id_ts* current = head;
     int count = 0;
 
-    while (current != NULL && count < x) {
+    while (current != NULL && count <= x) {
         if (current->id == id) {
             return 1;
         }
