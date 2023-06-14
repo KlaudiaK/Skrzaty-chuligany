@@ -149,11 +149,11 @@ void *startKomWatek(void *ptr) {
                             pthread_cond_signal(&condition);
                         }
                         eyeReqQueueHead = eyeReqQueueHead->next;
-                        count_eye++;
-                        nEye--;
                     } else {
                         sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
                         eyeReqQueueHead = eyeReqQueueHead->next;
+                        count_eye++;
+                        nEye--;
                     }
                 }
                 struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
