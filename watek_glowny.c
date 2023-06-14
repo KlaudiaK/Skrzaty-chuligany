@@ -152,11 +152,10 @@ void mainLoop()
             while (gpReqQueueHead != NULL && count_gp < nGunpoint) {
                 sendPacket( 0, gpReqQueueHead->id, ACK_GP );
                 gpReqQueueHead = gpReqQueueHead->next;
-                removeNode(&gPRequestQueue, gpReqQueueHead->id);
                 count_gp++;
                 nGunpoint--;
             }
-            sort(&gPRequestQueue);
+            sort(&eyeRequestQueue);
             sort(&gPRequestQueue);
             sem_post(&l_clock_sem);
             changeState( FREE );

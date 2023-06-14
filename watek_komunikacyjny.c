@@ -147,6 +147,7 @@ void *startKomWatek(void *ptr) {
                         && isElementAmongFirst(eyeRequestQueue, rank, nEye) == 1
                         ){
                             pthread_cond_signal(&condition);
+                            count_eye++;
                         }
                         eyeReqQueueHead = eyeReqQueueHead->next;
                     } else {
@@ -165,6 +166,7 @@ void *startKomWatek(void *ptr) {
                         && isElementAmongFirst(gPRequestQueue, rank, nGunpoint) == 1
                         ){
                             pthread_cond_signal(&condition);
+                            count_gp++;
                         }
                         gpReqQueueHead = gpReqQueueHead->next;
                     } else {
@@ -197,6 +199,7 @@ void *startKomWatek(void *ptr) {
                         && isElementAmongFirst(gunRequestQueue, rank, nGun) == 1
                         ){
                             pthread_cond_signal(&condition);
+                            count++;
                         }
                         gunReqQueueHead = gunReqQueueHead->next;
                     } else {
