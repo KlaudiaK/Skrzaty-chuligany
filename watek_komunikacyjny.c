@@ -144,15 +144,16 @@ void *startKomWatek(void *ptr) {
                     if (eyeReqQueueHead->id == rank)
                     {
                         if (ackCountEye == size - 1
-                        && isElementAmongFirst(eyeReqQueueHead, rank, nEye) == 1
+                        && isElementAmongFirst(eyeRequestQueue, rank, nEye) == 1
                         ){
                             pthread_cond_signal(&condition);
                         }
-                    } else {
-                        sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
                         eyeReqQueueHead = eyeReqQueueHead->next;
                         count_eye++;
                         nEye--;
+                    } else {
+                        sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
+                        eyeReqQueueHead = eyeReqQueueHead->next;
                     }
                 }
                 struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
@@ -161,10 +162,11 @@ void *startKomWatek(void *ptr) {
                     if (gpReqQueueHead->id == rank)
                     {
                         if (ackCountGp == size - 1
-                        && isElementAmongFirst(gpReqQueueHead, rank, nGunpoint) == 1
+                        && isElementAmongFirst(gPRequestQueue, rank, nGunpoint) == 1
                         ){
                             pthread_cond_signal(&condition);
                         }
+                        gpReqQueueHead = gpReqQueueHead->next;
                     } else {
                         sendPacket( 0, gpReqQueueHead->id, ACK_GP );
                         gpReqQueueHead = gpReqQueueHead->next;
@@ -196,6 +198,7 @@ void *startKomWatek(void *ptr) {
                         ){
                             pthread_cond_signal(&condition);
                         }
+                        gunReqQueueHead = gunReqQueueHead->next;
                     } else {
                         sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
                         gunReqQueueHead = gunReqQueueHead->next;
