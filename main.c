@@ -92,6 +92,7 @@ void sort(struct pair_id_ts** head) {
 }
 
 void printList(struct pair_id_ts* head) {
+    printf("RANK: %d\n", rank);
     struct pair_id_ts* current = head;
 
     while (current != NULL) {

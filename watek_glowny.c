@@ -23,7 +23,7 @@ void mainLoop()
             pkt = malloc(sizeof(packet_t));
             ackCountGp = 0;
             ackCountEye = 0;
-            ackCountGp = 0;
+            ackCountGun = 0;
             if (strcmp(type, "GNOME") == 0) {
                 insert(&eyeRequestQueue, rank, l_clock);
                 insert(&gPRequestQueue, rank, l_clock);
@@ -61,6 +61,7 @@ void mainLoop()
 	    case WAITING_FOR_EYE_AND_GUNPOINT:
             println("Czekam na wejście do sekcji krytycznej, wysłałem prośby o zasoby agrafek i celowników, czekam na odpowiedzi")
             println("MAM %d ack na eye i %d ack na gp", ackCountEye, ackCountGp);
+            println("Dostepnosc zasobow to eye: %d gp: %d", nEye, nGunpoint);
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
             pthread_mutex_lock(&mutex);
@@ -111,6 +112,7 @@ void mainLoop()
 		    break;
         case WAITING_FOR_GUN:
             println("Czekam na wejście do sekcji krytycznej, wysłałem prośby o zasób broni, czekam na odpowiedzi")
+            println("MAM %d ack na gun", ackCountGun);
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
             while (ackCountGun != size - 1 ||
