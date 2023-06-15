@@ -30,15 +30,26 @@ void *startKomWatek(void *ptr) {
                     if(nEye > 0){
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
                     sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
-                    removeNode(&eyeRequestQueue, status.MPI_SOURCE);
-                    //nEye--;
-                    }
-                } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                    if (isElementAmongFirst(eyeRequestQueue, status.MPI_SOURCE, nEye) && nEye > 0) {
-                        println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
-                        sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
+                        nEye--;
                         removeNode(&eyeRequestQueue, status.MPI_SOURCE);
-                        // nEye--;
+                    }
+                } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT ) {
+                    if (isElementAmongFirst(eyeRequestQueue, status.MPI_SOURCE, nEye) && nEye > 0) {
+                        println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
+                                status.MPI_SOURCE);
+                        sendPacket(0, status.MPI_SOURCE, ACK_EYE);
+                        nEye--;
+                        removeNode(&eyeRequestQueue, status.MPI_SOURCE);
+                    } else {
+                        println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
+                    }
+                } else if (stan == PRODUCING_GUN) {
+                    if (nEye > 1) {
+                        println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
+                                status.MPI_SOURCE);
+                        sendPacket(0, status.MPI_SOURCE, ACK_EYE);
+                        nEye--;
+                        removeNode(&eyeRequestQueue, status.MPI_SOURCE);
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
@@ -46,8 +57,8 @@ void *startKomWatek(void *ptr) {
                     if(nEye > 0){
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
                         sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
+                        nEye--;
                         removeNode(&eyeRequestQueue, status.MPI_SOURCE);
-                        //nEye--;
                         }
                 }
                 pthread_mutex_unlock(&mutex);
@@ -63,15 +74,25 @@ void *startKomWatek(void *ptr) {
                             status.MPI_SOURCE);
                     sendPacket(0, status.MPI_SOURCE, ACK_GP);
                     removeNode(&gPRequestQueue, status.MPI_SOURCE);
-                        //  nGunpoint--;
+                    nGunpoint--;
                     }
-                } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
+                } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT) {
                     if (isElementAmongFirst(gPRequestQueue, status.MPI_SOURCE, nGunpoint) && nGunpoint > 0) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GP);
                         removeNode(&gPRequestQueue, status.MPI_SOURCE);
-                        //nGunpoint--;
+                        nGunpoint--;
+                    } else {
+                        println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
+                    }
+                } else if (stan == PRODUCING_GUN) {
+                    if (nGunpoint > 1) {
+                        println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
+                                status.MPI_SOURCE);
+                        sendPacket(0, status.MPI_SOURCE, ACK_GP);
+                        removeNode(&gPRequestQueue, status.MPI_SOURCE);
+                        nGunpoint--;
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
@@ -81,7 +102,7 @@ void *startKomWatek(void *ptr) {
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GP);
                          removeNode(&gPRequestQueue, status.MPI_SOURCE);
-                       // nGunpoint--;
+                        nGunpoint--;
                      }
                 }
                 pthread_mutex_unlock(&mutex);
@@ -97,15 +118,25 @@ void *startKomWatek(void *ptr) {
                             status.MPI_SOURCE);
                     sendPacket(0, status.MPI_SOURCE, ACK_GUN);
                     removeNode(&gunRequestQueue, status.MPI_SOURCE);
-                    //nGun--;
+                    nGun--;
                     }
-                } else if (stan == WAITING_FOR_GUN || stan == KILLING_RAT) {
+                } else if (stan == WAITING_FOR_GUN) {
                     if (isElementAmongFirst(gunRequestQueue, status.MPI_SOURCE, nGun) && nGun > 0) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GUN);
                         removeNode(&gunRequestQueue, status.MPI_SOURCE);
-                       // nGun--;
+                        nGun--;
+                    } else {
+                        println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
+                    }
+                } else if (stan == KILLING_RAT) {
+                    if (nGun > 1) {
+                        println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
+                                status.MPI_SOURCE);
+                        sendPacket(0, status.MPI_SOURCE, ACK_GUN);
+                        removeNode(&gunRequestQueue, status.MPI_SOURCE);
+                        nGun--;
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
@@ -115,7 +146,7 @@ void *startKomWatek(void *ptr) {
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GUN);
                          removeNode(&gunRequestQueue, status.MPI_SOURCE);
-                       // nGun--;
+                        nGun--;
                      }
                 }
                 pthread_mutex_unlock(&mutex);
@@ -161,7 +192,6 @@ void *startKomWatek(void *ptr) {
                 pthread_mutex_lock(&mutex);
                 nEye++;
                 nGunpoint++;
-                nGun--;
                 removeNode(&gunRequestQueue, status.MPI_SOURCE);
                 sort(&gunRequestQueue);
                 sort(&gPRequestQueue);
@@ -175,37 +205,14 @@ void *startKomWatek(void *ptr) {
                         && isElementAmongFirst(eyeRequestQueue, rank, nEye) == 1
                         ){
                             pthread_cond_signal(&condition);
-                            count_eye++;
                         }
-                        eyeReqQueueHead = eyeReqQueueHead->next;
                     } else {
-                        int procID = eyeReqQueueHead->id;
-                        eyeReqQueueHead = eyeReqQueueHead->next;
-                        if (stan == FREE) {
-                            if(nEye > 0){
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", procID);
-                                sendPacket( 0, procID, ACK_EYE );
-                                removeNode(&eyeRequestQueue, procID);
-                                //nEye--;
-                            }
-                        } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                            if (isElementAmongFirst(eyeRequestQueue, procID, nEye) && nEye > 0) {
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", procID);
-                                sendPacket( 0, procID, ACK_EYE );
-                                removeNode(&eyeRequestQueue, procID);
-                                // nEye--;
-                            } else {
-                                println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", procID);
-                            }
-                        } else {
-                            if(nEye > 0){
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", procID);
-                                sendPacket( 0, procID, ACK_EYE );
-                                removeNode(&eyeRequestQueue, procID);
-                                //nEye--;
-                            }
-                        }
+                        sendPacket(0, eyeReqQueueHead->id, ACK_EYE);
+                        println("Wysyłam ACK_EYE do procesu o miejscu w kolejce: %d", eyeReqQueueHead->id);
+                        nEye--;
                     }
+                    eyeReqQueueHead = eyeReqQueueHead->next;
+                    count_eye++;
                 }
                 struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
                 int count_gp = 0;
@@ -216,41 +223,14 @@ void *startKomWatek(void *ptr) {
                         && isElementAmongFirst(gPRequestQueue, rank, nGunpoint) == 1
                         ){
                             pthread_cond_signal(&condition);
-                            count_gp++;
                         }
-                        gpReqQueueHead = gpReqQueueHead->next;
                     } else {
-                        int procID = gpReqQueueHead->id;
-                        gpReqQueueHead = gpReqQueueHead->next;
-
-                        if (stan == FREE) {
-                            if (nGunpoint > 0) {
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
-                                        procID);
-                                sendPacket(0, procID, ACK_GP);
-                                removeNode(&gPRequestQueue, procID);
-                                //  nGunpoint--;
-                            }
-                        } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                            if (isElementAmongFirst(gPRequestQueue, procID, nGunpoint) && nGunpoint > 0) {
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
-                                        procID);
-                                sendPacket(0, procID, ACK_GP);
-                                removeNode(&gPRequestQueue, procID);
-                                //nGunpoint--;
-                            } else {
-                                println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", procID);
-                            }
-                        } else {
-                            if(nGunpoint > 0) {
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
-                                        procID);
-                                sendPacket(0, procID, ACK_GP);
-                                removeNode(&gPRequestQueue,procID);
-                                // nGunpoint--;
-                            }
-                        }
+                        sendPacket(0, gpReqQueueHead->id, ACK_GP);
+                        println("Wysyłam ACK_GP do procesu o miejscu w kolejce: %d", gpReqQueueHead->id);
+                        nGunpoint--;
                     }
+                    gpReqQueueHead = gpReqQueueHead->next;
+                    count_gp++;
                 }
                 sort(&gPRequestQueue);
                 sort(&eyeRequestQueue);
@@ -275,41 +255,14 @@ void *startKomWatek(void *ptr) {
                         && isElementAmongFirst(gunRequestQueue, rank, nGun) == 1
                         ){
                             pthread_cond_signal(&condition);
-                            count++;
                         }
-                        gunReqQueueHead = gunReqQueueHead->next;
                     } else {
-                        int procID = gunReqQueueHead->id;
-                        gunReqQueueHead = gunReqQueueHead->next;
-                        if (stan == FREE) {
-                            if (nGun > 0) {
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
-                                        procID);
-                                sendPacket(0, procID, ACK_GUN);
-                                removeNode(&gunRequestQueue, procID);
-                                //nGun--;
-                            }
-                        } else if (stan == WAITING_FOR_GUN || stan == KILLING_RAT) {
-                            if (isElementAmongFirst(gunRequestQueue, procID, nGun) && nGun > 0) {
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
-                                        procID);
-                                sendPacket(0, procID, ACK_GUN);
-                                removeNode(&gunRequestQueue, procID);
-                                // nGun--;
-                            } else {
-                                println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.",
-                                        procID);
-                            }
-                        } else {
-                            if (nGun > 0) {
-                                println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
-                                        procID);
-                                sendPacket(0, procID, ACK_GUN);
-                                removeNode(&gunRequestQueue, procID);
-                                // nGun--;
-                            }
-                        }
+                        sendPacket(0, gunReqQueueHead->id, ACK_GUN);
+                        println("Wysyłam ACK_GUN do procesu o miejscu w kolejce: %d", gunReqQueueHead->id);
+                        nGun--;
                     }
+                    gunReqQueueHead = gunReqQueueHead->next;
+                    count++;
                 }
                 sort(&gunRequestQueue);
                 pthread_mutex_unlock(&mutex);

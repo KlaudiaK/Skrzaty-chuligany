@@ -106,8 +106,8 @@ void mainLoop()
                 int procId = gunReqQueueHead->id;
                 sendPacket( 0, procId, ACK_GUN );
                 gunReqQueueHead = gunReqQueueHead->next;
-                removeNode(&gunRequestQueue, procId);
                 count++;
+                nGun--;
             }
             gunRequestQueue = gunReqQueueHead;
             sort(&gunRequestQueue);
@@ -156,7 +156,7 @@ void mainLoop()
                 int procId = eyeReqQueueHead->id;
                 sendPacket( 0, procId, ACK_EYE );
                 eyeReqQueueHead = eyeReqQueueHead->next;
-                removeNode(&eyeRequestQueue, procId);
+                nEye--;
                 count_eye++;
             }
             eyeRequestQueue = eyeReqQueueHead;
@@ -166,7 +166,7 @@ void mainLoop()
                 int procId = gpReqQueueHead->id;
                 sendPacket( 0, procId, ACK_GP );
                 gpReqQueueHead = gpReqQueueHead->next;
-                removeNode(&gpReqQueueHead, procId);
+                nGunpoint--;
                 count_gp++;
             }
             gPRequestQueue = gpReqQueueHead;
