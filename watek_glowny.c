@@ -98,14 +98,19 @@ void mainLoop()
             sort(&gPRequestQueue);
             struct pair_id_ts* gunReqQueueHead = gunRequestQueue;
             int count = 0;
+            println("Lista gunReqQueHead\n");
+            printList(gunReqQueueHead);
+             sem_post(&l_clock_sem);
             while (gunReqQueueHead != NULL && count < nGun) {
+                println("Wszedlem do petli gunReqQuee\n");
                 sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
+
                 gunReqQueueHead = gunReqQueueHead->next;
                 count++;
                 nGun--;
             }
             sort(&gunRequestQueue);
-            sem_post(&l_clock_sem);
+           
             changeState( FREE );
             free(pkt);
         //}
@@ -116,11 +121,13 @@ void mainLoop()
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
             while (ackCountGun != size - 1 ||
-            isElementAmongFirst(gunRequestQueue, rank, nGun) != 1) {
+            isElementAmongFirst(gunRequestQueue, rank, nGun) != 1 ) {
+                println("DZaczynam czekanie w petli while\n");
                 pthread_cond_wait(&condition, &mutex);
             }
+            pthread_cond_signal(&condition);
             pthread_mutex_unlock(&mutex);
-
+            println("Dostalem sie dalej\n");
             sem_wait(&l_clock_sem);
             nGun--;
             sem_post(&l_clock_sem);
@@ -143,6 +150,7 @@ void mainLoop()
             sort(&gunRequestQueue);
             struct pair_id_ts* eyeReqQueueHead = eyeRequestQueue;
             int count_eye = 0;
+            sem_post(&l_clock_sem);
             while (eyeReqQueueHead != NULL && count_eye < nEye) {
                 sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
                 eyeReqQueueHead = eyeReqQueueHead->next;
@@ -159,7 +167,7 @@ void mainLoop()
             }
             sort(&eyeRequestQueue);
             sort(&gPRequestQueue);
-            sem_post(&l_clock_sem);
+            
             changeState( FREE );
             free(pkt);
             //}

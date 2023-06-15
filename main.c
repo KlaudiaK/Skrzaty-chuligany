@@ -104,8 +104,8 @@ void printList(struct pair_id_ts* head) {
 int isElementAmongFirst(struct pair_id_ts* head, int id, int x) {
     struct pair_id_ts* current = head;
     int count = 0;
-
-    while (current != NULL && count <= x) {
+    
+    while (current != NULL && count < x) {
         if (current->id == id) {
             return 1;
         }

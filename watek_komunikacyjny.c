@@ -27,11 +27,12 @@ void *startKomWatek(void *ptr) {
                 insert(&eyeRequestQueue, status.MPI_SOURCE, pakiet.ts);
                 sort(&eyeRequestQueue);
                 if (stan == FREE) {
+                    if(nEye > 0){
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
                     sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
-                    nEye--;
+                    nEye--;}
                 } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                    if (isElementAmongFirst(eyeRequestQueue, status.MPI_SOURCE, nEye)) {
+                    if (isElementAmongFirst(eyeRequestQueue, status.MPI_SOURCE, nEye) && nEye > 0) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
                         sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
                         nEye--;
@@ -39,9 +40,10 @@ void *startKomWatek(void *ptr) {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
                 } else {
+                    if(nEye > 0){
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack", status.MPI_SOURCE);
                         sendPacket( 0, status.MPI_SOURCE, ACK_EYE );
-                        nEye--;
+                        nEye--;}
                 }
                 pthread_mutex_unlock(&mutex);
                 break;
@@ -51,12 +53,14 @@ void *startKomWatek(void *ptr) {
                 insert(&gPRequestQueue, status.MPI_SOURCE, pakiet.ts);
                 sort(&gPRequestQueue);
                 if (stan == FREE) {
+                    if (nGunpoint > 0) {
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                             status.MPI_SOURCE);
                     sendPacket(0, status.MPI_SOURCE, ACK_GP);
                     nGunpoint--;
+                    }
                 } else if (stan == WAITING_FOR_EYE_AND_GUNPOINT || stan == PRODUCING_GUN) {
-                    if (isElementAmongFirst(gPRequestQueue, status.MPI_SOURCE, nGunpoint)) {
+                    if (isElementAmongFirst(gPRequestQueue, status.MPI_SOURCE, nGunpoint) && nGunpoint > 0) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GP);
@@ -65,10 +69,12 @@ void *startKomWatek(void *ptr) {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
                 } else {
+                     if(nGunpoint > 0) {
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GP);
                         nGunpoint--;
+                     }
                 }
                 pthread_mutex_unlock(&mutex);
                 break;
@@ -78,24 +84,28 @@ void *startKomWatek(void *ptr) {
                 insert(&gunRequestQueue, status.MPI_SOURCE, pakiet.ts);
                 sort(&gunRequestQueue);
                 if (stan == FREE) {
+                    if(nGun > 0) {
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                             status.MPI_SOURCE);
                     sendPacket(0, status.MPI_SOURCE, ACK_GUN);
-                    nGun--;
+                    //nGun--;
+                    }
                 } else if (stan == WAITING_FOR_GUN || stan == KILLING_RAT) {
-                    if (isElementAmongFirst(gunRequestQueue, status.MPI_SOURCE, nGun)) {
+                    if (isElementAmongFirst(gunRequestQueue, status.MPI_SOURCE, nGun) && nGun > 0) {
                         println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GUN);
-                        nGun--;
+                       // nGun--;
                     } else {
                         println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", status.MPI_SOURCE);
                     }
                 } else {
+                     if(nGun > 0) {
                     println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                 status.MPI_SOURCE);
                         sendPacket(0, status.MPI_SOURCE, ACK_GUN);
-                        nGun--;
+                       // nGun--;
+                     }
                 }
                 pthread_mutex_unlock(&mutex);
                 break;
@@ -115,10 +125,17 @@ void *startKomWatek(void *ptr) {
                 debug("Dostałem ACK_GUN od %d, mam już %d", status.MPI_SOURCE, ackCountGun);
                 println("dostepnosc broni to %d", nGun);
                 printList(gunRequestQueue);
+
+
+
+                println("Liczba ack GUN %d, jestem pierwszy %d", ackCountGun, isElementAmongFirst(gunRequestQueue, rank, nGun) == 1);
+
+                
                 if (ackCountGun == size - 1
                 && isElementAmongFirst(gunRequestQueue, rank, nGun) == 1
                 ){
                     pthread_cond_signal(&condition);
+                    println("Wyslalem syyyyyyyyyyyygnal");
                 }
                 pthread_mutex_unlock(&mutex);
                 break;
@@ -241,13 +258,13 @@ void *startKomWatek(void *ptr) {
                             println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                     gunReqQueueHead->id);
                             sendPacket(0, gunReqQueueHead->id, ACK_GUN);
-                            nGun--;
+                            //nGun--;
                         } else if (stan == WAITING_FOR_GUN || stan == KILLING_RAT) {
                             if (isElementAmongFirst(gunRequestQueue, gunReqQueueHead->id, nGun)) {
                                 println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                         gunReqQueueHead->id);
                                 sendPacket(0, gunReqQueueHead->id, ACK_GUN);
-                                nGun--;
+                                //nGun--;
                             } else {
                                 println("Proces %d nie może dostać pozwolenia na korzystanie z zasobu.", gunReqQueueHead->id);
                             }
@@ -255,7 +272,7 @@ void *startKomWatek(void *ptr) {
                             println("Proces %d może dostać pozwolenie na korzystanie z zasobu, wysyłam ack",
                                     gunReqQueueHead->id);
                             sendPacket(0, gunReqQueueHead->id, ACK_GUN);
-                            nGun--;
+                           // nGun--;
                         }
                         gunReqQueueHead = gunReqQueueHead->next;
                     }
