@@ -65,10 +65,10 @@ void mainLoop()
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
             pthread_mutex_lock(&mutex);
-            while (ackCountEye < size - 1 || ackCountGp < size - 1
-            || isElementAmongFirst(eyeRequestQueue, rank, nEye) != 1
-            || isElementAmongFirst(gPRequestQueue, rank, nGunpoint) != 1
-            ) {
+            while (!(ackCountEye == size - 1 || ackCountGp == size - 1
+            && isElementAmongFirst(eyeRequestQueue, rank, nEye) == 1
+            && isElementAmongFirst(gPRequestQueue, rank, nGunpoint) == 1
+            )) {
                 pthread_cond_wait(&condition, &mutex);
             }
             pthread_mutex_unlock(&mutex);
@@ -98,14 +98,20 @@ void mainLoop()
             sort(&gPRequestQueue);
             struct pair_id_ts* gunReqQueueHead = gunRequestQueue;
             int count = 0;
+            println("Lista gunReqQueHead\n");
+//            printList(gunReqQueueHead);
+             sem_post(&l_clock_sem);
             while (gunReqQueueHead != NULL && count < nGun) {
-                sendPacket( 0, gunReqQueueHead->id, ACK_GUN );
+                println("Wszedlem do petli gunReqQuee\n");
+                int procId = gunReqQueueHead->id;
+                sendPacket( 0, procId, ACK_GUN );
                 gunReqQueueHead = gunReqQueueHead->next;
                 count++;
                 nGun--;
             }
+            gunRequestQueue = gunReqQueueHead;
             sort(&gunRequestQueue);
-            sem_post(&l_clock_sem);
+           
             changeState( FREE );
             free(pkt);
         //}
@@ -115,12 +121,14 @@ void mainLoop()
             println("MAM %d ack na gun", ackCountGun);
             // tutaj zapewne jakiś muteks albo zmienna warunkowa
             // bo aktywne czekanie jest BUE
-            while (ackCountGun != size - 1 ||
-            isElementAmongFirst(gunRequestQueue, rank, nGun) != 1) {
+            while (!(ackCountGun == size - 1 &&
+            isElementAmongFirst(gunRequestQueue, rank, nGun) == 1 )) {
+                println("DZaczynam czekanie w petli while\n");
                 pthread_cond_wait(&condition, &mutex);
             }
+            pthread_cond_signal(&condition);
             pthread_mutex_unlock(&mutex);
-
+            println("Dostalem sie dalej\n");
             sem_wait(&l_clock_sem);
             nGun--;
             sem_post(&l_clock_sem);
@@ -143,23 +151,28 @@ void mainLoop()
             sort(&gunRequestQueue);
             struct pair_id_ts* eyeReqQueueHead = eyeRequestQueue;
             int count_eye = 0;
+            sem_post(&l_clock_sem);
             while (eyeReqQueueHead != NULL && count_eye < nEye) {
-                sendPacket( 0, eyeReqQueueHead->id, ACK_EYE );
+                int procId = eyeReqQueueHead->id;
+                sendPacket( 0, procId, ACK_EYE );
                 eyeReqQueueHead = eyeReqQueueHead->next;
-                count_eye++;
                 nEye--;
+                count_eye++;
             }
+            eyeRequestQueue = eyeReqQueueHead;
             struct pair_id_ts* gpReqQueueHead = gPRequestQueue;
             int count_gp = 0;
             while (gpReqQueueHead != NULL && count_gp < nGunpoint) {
-                sendPacket( 0, gpReqQueueHead->id, ACK_GP );
+                int procId = gpReqQueueHead->id;
+                sendPacket( 0, procId, ACK_GP );
                 gpReqQueueHead = gpReqQueueHead->next;
-                count_gp++;
                 nGunpoint--;
+                count_gp++;
             }
+            gPRequestQueue = gpReqQueueHead;
             sort(&eyeRequestQueue);
             sort(&gPRequestQueue);
-            sem_post(&l_clock_sem);
+            
             changeState( FREE );
             free(pkt);
             //}
