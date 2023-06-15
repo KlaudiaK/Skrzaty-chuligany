@@ -99,7 +99,7 @@ void mainLoop()
             struct pair_id_ts* gunReqQueueHead = gunRequestQueue;
             int count = 0;
             println("Lista gunReqQueHead\n");
-            printList(gunReqQueueHead);
+//            printList(gunReqQueueHead);
              sem_post(&l_clock_sem);
             while (gunReqQueueHead != NULL && count < nGun) {
                 println("Wszedlem do petli gunReqQuee\n");

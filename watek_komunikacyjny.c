@@ -166,7 +166,7 @@ void *startKomWatek(void *ptr) {
                 ackCountGun++;
                 debug("Dostałem ACK_GUN od %d, mam już %d", status.MPI_SOURCE, ackCountGun);
                 println("dostepnosc broni to %d", nGun);
-                printList(gunRequestQueue);
+//                printList(gunRequestQueue);
 
                 println("Liczba ack GUN %d, jestem pierwszy %d", ackCountGun, isElementAmongFirst(gunRequestQueue, rank, nGun) == 1);
 
